@@ -1,119 +1,92 @@
 import random
-import numpy as np
+import pyglet
+from calculations import field_preparation, calculate_price
 
 
-class four_in_line:
+# 4-е в ряд
+class Game:
     def __init__(self):
-        self.lines = np.array([["X" for _ in range(6)] for _ in range(7)])
-        self.step = bool(random.randint(0, 1))
+        self.__folder = [["X" for _ in range(6)] for _ in range(7)]
+        self.player: bool = bool(random.randint(0, 1))  # true - Желтые, false - красные
+        self.__hover_idx = -1
+        self.winner = None
 
-    def play(self):
-        end = find_winner(self.lines)
-        if end:
-            print(f"Поздравляет с победой игрока {end}")
-            return False
-        pos = int(input(f"Игрок {int(self.step) + 1} введите позицию для хода: "))
-        if pos == -1:
-            return False
-        if pos < 0 or pos > len(self.lines) - 1 or self.lines[pos][-1] != "X":
-            print("Сюда нельзя сходить!")
-            return self.play()
-        else:
-            idx = np.where(self.lines[pos] == "X")
-            self.lines[pos][idx[0][0]] = "Y" if self.step else "R"
-            self.step = not self.step
-        return True
+    def __search(self, lines: list) -> str:
+        for i in lines:
+            if len(i) < 4:
+                continue
+            for l in range(len(i) - 3):
+                if i[l:l + 4].count("R") == 4:
+                    return "R"
+                elif i[l:l + 4].count("Y") == 4:
+                    return "Y"
+        return "X"
+
+    @property
+    def end(self):
+        folders = field_preparation(self.__folder)
+        for folder in folders:
+            result = self.__search(folder)
+            if result != "X":
+                print(f"Победил игрок {result}")
+                self.winner = result
+                self.__hover_idx = -1
+                return True
+        return False
+
+    def calculate_pos(self):
+        f = []
+        for i in self.__folder:
+            f.append(i.copy())
+
+        if f[self.__hover_idx].count("X") > 0:
+            idx = f[self.__hover_idx].index("X")
+            f[self.__hover_idx][idx] = "Y" if self.player else "R"
+        one = 1 if not self.player else -1
+        print("Расчет удачности позиции", calculate_price(f) * one)
+
+    def mark_mouse(self, x: int):
+        if x < 50 or x > 450:
+            return
+        circle_pos = 50
+        for i in range(len(self.__folder)):
+            if x > circle_pos and x < circle_pos + 50:
+                self.__hover_idx = i
+                self.calculate_pos()
+                return
+            circle_pos += 60
+
+    def press(self):
+        if self.__hover_idx >= 0 and self.__folder[self.__hover_idx].count("X") > 0:
+            idx = self.__folder[self.__hover_idx].index("X")
+            self.__folder[self.__hover_idx][idx] = "Y" if self.player else "R"
+            self.player = not self.player
 
     def draw(self):
-        print("Y", calculate_price(self.lines, self.step))
-        print("R", calculate_price(self.lines, not self.step))
-        for i in range(5, -1, -1):
-            text = ""
-            for l in range(7):
-                if len(self.lines[l]) > i:
-                    text += f"{self.lines[l][i]}\t"
-                else:
-                    text += "X\t"
-            print(text)
+        color1 = (255, 0, 0)
+        color1_mark = (255, 200, 200)
 
-
-def win_four(line: np.array):
-    rem_count = 0
-    remember = None
-    for i in line:
-        if remember is None and i != "X":
-            remember = i
-
-        if remember == i:
-            rem_count += 1
-            if rem_count == 4:
-                return remember
-        elif i != "X":
-            rem_count = 1
-            remember = i
-    return False
-
-
-def find_winner(lines: np.array):
-    hor = np.column_stack(lines)
-    for i in lines:
-        result = win_four(i)
-        if result:
-            return result
-    for i in hor:
-        result = win_four(i)
-        if result:
-            return result
-    for i in range(-6, 6):
-        result = win_four(np.diagonal(lines, i))
-        if result:
-            return result
-    for i in range(-5, 7):
-        result = win_four(np.diagonal(np.rot90(lines), i))
-        if result:
-            return result
-    return False
-
-
-def calculate_four(line: np.array):
-    values = [1, 10, 500, 1000]
-    result = 0
-    count = 0
-    rem_count = 0
-    remember = None
-    for i in line:
-        if remember is None and i != "X":
-            remember = i
-
-        if i == "X" or remember == i:
-            if remember == i:
-                rem_count += 1
-            count += 1
-        else:
-            if count >= 4 and rem_count > 0:
-                orientacion = 1 if remember == "Y" else -1
-                result += values[rem_count - 1] * orientacion
-            count = 1
-            rem_count = 1
-            remember = i
-    if count >= 4 and rem_count > 0:
-        orientacion = 1 if remember == "Y" else -1
-        result += values[rem_count - 1] * orientacion
-
-    return result
-
-
-def calculate_price(array: np.array, step: bool):
-    result = 0
-    hor = np.column_stack(array)
-    for i in array:
-        result += calculate_four(i)
-    for i in hor:
-        result += calculate_four(i)
-    for i in range(-6, 6):
-        result += calculate_four(np.diagonal(array, i))
-    for i in range(-5, 7):
-        result += calculate_four(np.diagonal(np.rot90(array), i))
-    if step:
-        result *= -1
-    return result
+        color2 = (255, 255, 0)
+        color2_mark = (255, 255, 200)
+        radius = 25
+        x = 75
+        y = 75
+        mark: bool = False
+        for i in range(len(self.__folder)):
+            for cell in self.__folder[i]:
+                pyglet.shapes.Circle(x, y, radius + 1, color=(0, 0, 0)).draw()
+                color = (200, 200, 200)
+                if cell == "R":
+                    color = color1
+                elif cell == "Y":
+                    color = color2
+                elif self.__hover_idx == i and not mark:
+                    mark = not mark
+                    if not self.player:
+                        color = color1_mark
+                    else:
+                        color = color2_mark
+                pyglet.shapes.Circle(x, y, radius, color=color).draw()
+                y += radius * 2 + 10
+            y = 75
+            x += radius * 2 + 10
