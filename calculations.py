@@ -1,5 +1,7 @@
 import numpy as np
 
+
+# Расчет удачности позиции (все возможные четверки в строке)
 def calculate_line_price(lines: list):
     values = [0, 1, 10, 500, 10000]
     result = 0
@@ -13,6 +15,8 @@ def calculate_line_price(lines: list):
     return result
 
 
+# Разбираем все возможные повороты поля
+# Обычное, по горизонтали, 2-е диагонали
 def field_preparation(field: list):
     fields = [field]
     fields.append(np.column_stack(field).tolist())
@@ -26,6 +30,7 @@ def field_preparation(field: list):
     return fields
 
 
+# Расчет суммы оценки кажной строки каждого из возможных поворотов поля
 def calculate_price(field: list):
     fields = field_preparation(field)
     result = 0

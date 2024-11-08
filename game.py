@@ -10,10 +10,11 @@ class Game:
         self.__folder = [["X" for _ in range(6)] for _ in range(7)]
         self.player: bool = bool(random.randint(0, 1))  # true - Желтые, false - красные
         self.__hover_idx = -1
-        self.__computers = computers
+        self.__computers = computers  # игрок со значением True будет заменен на компьютер
         self.__computer = Computer(self.__folder, self.player)
         self.winner = None
 
+    # Проверка наличия победителя
     def __search(self, lines: list) -> str:
         for i in lines:
             if len(i) < 4:
@@ -25,6 +26,7 @@ class Game:
                     return "Y"
         return "X"
 
+    # Проверка на окончание игры
     @property
     def end(self):
         folders = field_preparation(self.__folder)
@@ -37,6 +39,7 @@ class Game:
                 return True
         return False
 
+    # Копирование игрового поля
     @property
     def __folder_copy(self):
         f = []
@@ -44,6 +47,7 @@ class Game:
             f.append(i.copy())
         return f
 
+    # Оценка выбранной игроком позиции, глубина один уровень (не обязательная)
     def __calculate_pos(self):
         f = self.__folder_copy
         if f[self.__hover_idx].count("X") > 0:
@@ -52,6 +56,7 @@ class Game:
         one = 1 if not self.player else -1
         print("Расчет удачности позиции", calculate_price(f) * one)
 
+    # Отметка выбранного ряда (нужна для отрисовки)
     def mark_mouse(self, x: int):
         if x < 50 or x > 450 or self.__computers[int(self.player)]:
             return
@@ -62,18 +67,22 @@ class Game:
                 return
             circle_pos += 60
 
+    # Обработка нажатия правой клавиши мыши
     def press(self):
         if self.__hover_idx >= 0 and self.__folder[self.__hover_idx].count("X") > 0 and \
                 not self.__computers[int(self.player)]:
             self.__dumping(self.__hover_idx)
 
+    # Применение выбраной позиции
     def __dumping(self, dumping_idx: int):
         idx = self.__folder[dumping_idx].index("X")
         self.__folder[dumping_idx][idx] = "Y" if self.player else "R"
         self.player = not self.player
         self.__computer.new_data(self.__folder_copy, self.player)
 
+    # Отрисовка интерфейса
     def draw(self):
+        # Запуск итерации проверки хода компьютером
         if not self.winner and self.__computers[int(self.player)]:
             result = self.__computer.step()
             self.__hover_idx = self.__computer.hover_idx
@@ -81,9 +90,11 @@ class Game:
                 self.__hover_idx = result
                 self.__dumping(result)
 
+        # Цвета игроков
+        # Игрок 1 - красный
         color1 = (255, 0, 0)
         color1_mark = (255, 200, 200)
-
+        # Игрок 2 - желтый
         color2 = (255, 255, 0)
         color2_mark = (255, 255, 200)
         radius = 25
