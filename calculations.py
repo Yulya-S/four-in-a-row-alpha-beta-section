@@ -3,7 +3,7 @@ import numpy as np
 
 # Расчет удачности позиции (все возможные четверки в строке)
 def calculate_line_price(lines: list):
-    values = [0, 1, 10, 500, 10000]
+    values = [0, 1, 10, 500, 1000000]
     result = 0
     for i in lines:
         if len(i) < 4:

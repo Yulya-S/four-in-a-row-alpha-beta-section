@@ -2,16 +2,17 @@ import random
 import pyglet
 from calculations import field_preparation, calculate_price
 from computer import Computer
+import json
 
 
 # 4-е в ряд
 class Game:
-    def __init__(self, computers: [bool, bool] = [True, False]):
+    def __init__(self, play_with_computer: bool = True):
         self.__folder = [["X" for _ in range(6)] for _ in range(7)]
         self.player: bool = bool(random.randint(0, 1))  # true - Желтые, false - красные
         self.__hover_idx = -1
-        self.__computers = computers  # игрок со значением True будет заменен на компьютер
-        self.__computer = Computer(self.__folder, self.player)
+        self.__play_with_computer = play_with_computer
+        self.__computer = Computer(self.player)
         self.winner = None
 
     # Проверка наличия победителя
@@ -36,8 +37,15 @@ class Game:
                 print(f"Победил игрок {result}")
                 self.winner = result
                 self.__hover_idx = -1
+                # with open("base.json", "w") as file:
+                #     file.write(json.dumps(self.__computer.folder_base))
+
                 return True
-        return False
+        for i in self.__folder:
+            if i.count("X") > 0:
+                return False
+        print("В игре состаялась Ничья!")
+        return True
 
     # Копирование игрового поля
     @property
@@ -58,7 +66,7 @@ class Game:
 
     # Отметка выбранного ряда (нужна для отрисовки)
     def mark_mouse(self, x: int):
-        if x < 50 or x > 450 or self.__computers[int(self.player)]:
+        if x < 50 or x > 450 or (self.__play_with_computer and not self.player):
             return
         circle_pos = 50
         for i in range(len(self.__folder)):
@@ -70,7 +78,7 @@ class Game:
     # Обработка нажатия правой клавиши мыши
     def press(self):
         if self.__hover_idx >= 0 and self.__folder[self.__hover_idx].count("X") > 0 and \
-                not self.__computers[int(self.player)]:
+                (not self.__play_with_computer or self.player):
             self.__dumping(self.__hover_idx)
 
     # Применение выбраной позиции
@@ -78,12 +86,12 @@ class Game:
         idx = self.__folder[dumping_idx].index("X")
         self.__folder[dumping_idx][idx] = "Y" if self.player else "R"
         self.player = not self.player
-        self.__computer.new_data(self.__folder_copy, self.player)
+        self.__computer.new_data(dumping_idx, self.player)
 
     # Отрисовка интерфейса
     def draw(self):
         # Запуск итерации проверки хода компьютером
-        if not self.winner and self.__computers[int(self.player)]:
+        if not self.winner and self.__play_with_computer and not self.player:
             result = self.__computer.step()
             self.__hover_idx = self.__computer.hover_idx
             if result is not None:
